@@ -57,6 +57,17 @@ document.addEventListener("DOMContentLoaded", () => {
         // console.log("Tática Ativa: ", debateSicrono, apresentacaoSicrona, reuso);
     }
 
+    function normalizeTacticName(name) {
+        if (!name) return "";
+        return name
+            .toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[_-]+/g, " ")
+            .trim()
+            .toLowerCase();
+    }
+
 
     function debateSicrono(id_chat) {
         fetch(`/chat_fragment/${id_chat}/${session_id}`)
@@ -175,8 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 //     elementToRemove.remove(); // Remove o próprio elemento
                 // }
 
-                // Verifica se a tática atual é "Debate Sincrono"
-                if (tacticName == "Debate Sincrono") {
+                // Verifica se a tática atual é "Debate Sincrono" (aceita variações como debate_sincrono)
+                const normalizedTacticName = normalizeTacticName(tacticName);
+                if (normalizedTacticName === "debate sincrono") {
 
                     // Evitar adicionar o botão várias vezes:
                     if (!document.getElementById("debate_sicrono")) {
@@ -188,17 +200,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         id_chat = null;
                         for (let tatic_stra in strategyTactics) {
-                            // console.log(strategyTactics[tatic_stra].name);
-                            if (strategyTactics[tatic_stra].name == "Debate Sincrono") {
-                                id_chat = strategyTactics[tatic_stra].chat_id;
-                                break;
+                            const tactic = strategyTactics[tatic_stra];
+                            if (normalizeTacticName(tactic?.name) === normalizedTacticName) {
+                                id_chat = tactic?.chat_id;
+                                if (id_chat !== null && id_chat !== undefined && id_chat !== "") break;
                             }
                         }
 
-                        if (taticaAtiva == false) {
+                        if ((id_chat === null || id_chat === undefined || id_chat === "") && Array.isArray(strategyTactics)) {
+                            // Fallback defensivo: pega qualquer chat_id da tática de debate caso o nome não bata exatamente.
+                            const debateWithChat = strategyTactics.find(t => (
+                                normalizeTacticName(t?.name) === "debate sincrono" &&
+                                t?.chat_id !== null &&
+                                t?.chat_id !== undefined &&
+                                t?.chat_id !== ""
+                            ));
+                            if (debateWithChat) {
+                                id_chat = debateWithChat.chat_id;
+                            }
+                        }
+
+                        if (taticaAtiva == false && id_chat !== null && id_chat !== undefined && id_chat !== "") {
                             console.log("Entrando no debate sincrono");
                             debateSicrono(id_chat);
                             taticaAtiva = true;
+                        } else if (taticaAtiva == false) {
+                            console.error("Não foi possível iniciar Debate Síncrono: chat_id não encontrado.", { tacticName, strategyTactics });
                         }
                     }
                 }
