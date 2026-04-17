@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .chat-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-card {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #messages {
+            list-style-type: none;
+            overflow-y: auto;
+            flex: 1;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 20px;
+            max-width: 70%;
+            word-wrap: break-word;
+            display: inline-block;
+        }
+
+        .my-message {
+            background-color: #c5eed7;
+            align-self: flex-end;
+            text-align: left;
+        }
+
+        .other-message {
+            background-color: #bbd3e9;
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        .username {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        .green {
+            color: rgb(32, 170, 32);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <strong>Usuários Online</strong>
+                    </div>
+                    <ul id="user-list" class="list-group list-group-flush">
+                        <li class="list-group-item">Carregando...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card shadow-sm chat-card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="chat-tabs-list" role="tablist">
+                        </ul>
+                    </div>
+
+                    <div class="card-body tab-content" id="chat-tabs-content">
+                    </div>
+
+                    <div class="card-footer">
+                        <form id="chatForm" class="d-flex">
+                            <!-- <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea> -->
+                            <input id="myMessage" class="form-control me-2 " placeholder="Digite uma mensagem..."
+                                autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary">Enviar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Todo o JavaScript virá aqui
+        document.addEventListener('DOMContentLoaded', function () {
+            const socket = io();
+
+            const myUsername = "{{ current_user['name'] }}";
+            const myUserId = "{{ current_user['id'] }}"; // Precisamos do ID do usuário atual
+
+            // Elementos da UI
+            const userList = document.getElementById('user-list');
+            const chatTabsList = document.getElementById('chat-tabs-list');
+            const chatTabsContent = document.getElementById('chat-tabs-content');
+            const chatForm = document.getElementById('chatForm');
+            const messageInput = document.getElementById('myMessage');
+
+            // Estado para controlar as conversas privadas abertas
+            let openPrivateChats = new Set();
+
+            // --- FUNÇÕES PRINCIPAIS ---
+
+            /**
+             * Cria e abre uma nova aba de chat privado
+             * @param {string} userId - O ID do usuário com quem conversar
+             * @param {string} userName - O nome do usuário
+             */
+
+            //  openPrivateChat(senderId, reciver_id);
+            function openPrivateChat(userId, userName) {
+
+                console.log(`Abrindo chat privado com ${userName} (ID: ${userId})`);
+                console.log(`Usuário atual: ${myUsername} (ID: ${myUserId})`);
+                console.log(userId == myUserId && userName == myUsername);
+
+                // Não abrir uma aba para se mesmo
+                if (userName == myUsername) {
+                    // console.warn("Tentativa de abrir chat com si mesmo. Ignorando.");
+                    return;
+                }
+
+                // 1. Criar o botão da aba (com ícone de fechar)
+                const tabButton = document.createElement('li');
+                tabButton.className = 'nav-item';
+                tabButton.innerHTML = `
+            <button class="nav-link"  id="tab-btn-${userId}" data-bs-toggle="tab" data-bs-target="#tab-pane-${userId}" type="button" role="tab" aria-controls="tab-pane-${userId}" aria-selected="false">
+                ${userName}
+                <span class="btn-close btn-close-sm ms-2" data-user-id="${userId}" aria-label="Close"></span>
+            </button>
+        `;
+                chatTabsList.appendChild(tabButton);
+
+                // 2. Criar o painel de conteúdo da aba
+                const tabPane = document.createElement('div');
+                tabPane.className = 'tab-pane fade';
+                tabPane.id = `tab-pane-${userId}`;
+                tabPane.role = 'tabpanel';
+                tabPane.innerHTML = `<ul class="list-unstyled overflow-auto chat-messages" style="height: 60vh;"></ul>`; // Área para mensagens
+                chatTabsContent.appendChild(tabPane);
+                chatTabsContent.scrollTop = chatTabsContent.scrollHeight;
+
+                // 3. Adicionar ao estado e ativar a nova aba
+
+                openPrivateChats.add(userId);
+                const newTab = new bootstrap.Tab(tabButton.querySelector('button'));
+                newTab.show();
+
+                // 4. Pedir ao servidor o histórico de mensagens desta conversa privada
+                socket.emit('load_private_messages', {
+                    with_user_id: userId,
+                    chat_id: "{{ chat_id }}"
+                });
+            }
+
+            /**
+             * Adiciona uma mensagem de texto a um painel de chat específico
+             * @param {string} paneId - ID do painel de conteúdo (ex: 'tab-pane-geral' ou 'tab-pane-123')
+             * @param {object} message - Objeto da mensagem {username, content}
+             */
+            function addMessageToPane(paneId, message) {
+
+                const pane = document.getElementById(paneId);
+                if (!pane) return;
+
+                const messagesUl = pane.querySelector('.chat-messages');
+                const item = document.createElement('li');
+
+
+
+                if (message.content.includes("aviso -")) {
+                    item.className = `d-flex flex-column my-2 item-warning align-items-center green`;
+                    item.innerHTML = message.content.replace("aviso - ", "");
+
+                } else {
+                    item.className = `d-flex flex-column my-2 ${message.username === myUsername ? 'align-items-end' : 'align-items-start'}`;
+
+                    item.innerHTML = `
+                                        <div class="m-3 message ${message.username === myUsername ? 'my-message' : 'other-message'}">
+                                            <span class="username">${message.username}</span>
+                                            <span>${message.content}</span>
+                                        </div>
+                                    `;
+                }
+
+                messagesUl.appendChild(item);
+                messagesUl.scrollTop = messagesUl.scrollHeight; // Auto-scroll
+            }
+
+            // --- MANIPULADORES DE EVENTOS (EVENT LISTENERS) ---
+
+            // Lidar com cliques na lista de usuários para abrir chats
+            userList.addEventListener('click', function (e) {
+                const userItem = e.target.closest('[data-user-id]');
+                console.log(userItem)
+                if (userItem) {
+                    const userId = userItem.dataset.userId;
+                    const userName = userItem.dataset.userName;
+                    openPrivateChat(userId, userName);
+                }
+            });
+
+            // Lidar com o fechamento de uma aba
+            chatTabsList.addEventListener('click', function (e) {
+                if (e.target.classList.contains('btn-close')) {
+                    e.stopPropagation(); // Impede que o clique ative a aba antes de fechar
+
+                    const userId = e.target.dataset.userId;
+
+
+                    // Remove o botão e o painel
+                    const tabButton = document.querySelector(`#tab-btn-${userId}`).parentElement;
+                    const tabPane = document.querySelector(`#tab-pane-${userId}`);
+                    tabButton.remove();
+                    tabPane.remove();
+
+                    // Remove do estado
+                    openPrivateChats.delete(userId);
+
+                    // Ativa a aba "Geral" por padrão
+                    const generalTab = new bootstrap.Tab(document.querySelector('#tab-btn-geral'));
+                    generalTab.show();
+                }
+            });
+
+            // Lidar com o envio de mensagem
+            chatForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                if (message === "") return;
+
+                // Descobrir qual aba está ativa
+                const activeTab = document.querySelector('#chat-tabs-list .nav-link.active');
+                const activeTabId = activeTab.id; // ex: 'tab-btn-geral' ou 'tab-btn-123'
+
+                if (activeTabId === 'tab-btn-geral') {
+                    socket.emit('general_message', {
+                        username: myUsername,
+                        chat_id: "{{ chat_id }}",
+                        content: message
+                    });
+                } else {
+                    const targetUserId = activeTabId.replace('tab-btn-', '');
+                    // console.log(`Enviando mensagem privada para o usuário ID: ${targetUserId}`);
+                    socket.emit('private_message', {
+                        username: myUsername,
+                        content: message,
+                        recipient_id: targetUserId,
+                        chat_id: "{{ chat_id }}"
+                    });
+                    // Adiciona a mensagem à sua própria tela imediatamente
+                    // addMessageToPane(`tab-pane-${targetUserId}`, { username: myUsername, content: message });
+                }
+
+                messageInput.value = "";
+            });
+
+
+            // --- SOCKET.IO LISTENERS ---
+
+            socket.on('connect', function () {
+                console.log('Conectado ao servidor!');
+                socket.emit('join', { chat_id: "{{ chat_id }}" });
+            });
+
+            socket.on('new_private_message', function (message) {
+                // IDs dos participantes da mensagem
+                const user1 = message.sender_id;
+                const user2 = message.receiver_id;
+                const myId = myUserId;
+
+                // Verifica se o usuário atual é um dos participantes
+                // Se o usuário atual é um dos participantes, abre a aba de chat privado
+                if (user1 == myId || user2 == myId) {
+                    // const otherUserId = (user1 === myId) ? user2 : user1;
+                    const senderId = message.sender_id;
+                    const reciver_id = message.username; // Usamos o username que vem na mensagem
+
+                    // Abre a aba se não estiver aberta e exibe a mensagem
+                    openPrivateChat(senderId, reciver_id);
+                    addMessageToPane(`tab-pane-${message.receiver_id}`, message);
+                }
+            });
+
+            socket.on('update_user_list', function (userListDataString) {
+                console.log("Atualizando lista de usuários...");
+                console.log("Dados recebidos (string):", userListDataString);
+
+                // 2. Usamos JSON.parse() para transformar a string em um array de objetos JavaScript.
+                const parsedUsers = JSON.parse(userListDataString);
+                console.log("Dados convertidos (array):", parsedUsers);
+
+                // 3. Limpamos o CONTEÚDO do elemento <ul>.
+                userList.innerHTML = '';
+
+                // 4. Agora, iteramos sobre o ARRAY 'parsedUsers', que é um array de verdade.
+                parsedUsers.forEach(user => {
+                    // Não mostra você mesmo na lista para iniciar chat
+                    // Certifique-se que 'myUserId' está definido e é um número ou string consistente com 'user.id'
+                    if (user.name == myUsername && user.id == myUserId) return;
+
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.dataset.userId = user.id;
+                    item.dataset.userName = user.name;
+
+                    // Adiciona o tipo de usuário (Estudante/Professor) para ficar mais claro
+                    item.textContent = `${user.name} (${user.type})`;
+
+                    // 5. Adicionamos o novo elemento <a> ao elemento <ul> da página.
+                    userList.appendChild(item);
+                });
+            });
+
+            socket.on('general_message', function (message) {
+                addMessageToPane('tab-pane-geral', message);
+            });
+
+            function showUserJoinedToChat(msg) {
+                socket.emit('general_message', {
+                    username: myUsername,
+                    chat_id: "{{ chat_id }}",
+                    content: msg
+                });
+            }
+
+            socket.on('new_general_message', function (message) {
+                // Adiciona a mensagem à aba "Geral"
+                addMessageToPane('tab-pane-geral', message);
+            });
+
+            socket.on('private_message', function (message) {
+                // A mensagem vem de 'sender_id'. O outro participante é você.
+                const otherUserId = message.sender_id;
+                console.log(">>>>>>>>>>>>>>>>>>>>>>> ")
+                // Abre a aba se não estiver aberta
+                openPrivateChat(otherUserId, message.username);
+                // Adiciona a mensagem
+                addMessageToPane(`tab-pane-${otherUserId}`, message);
+            });
+
+            socket.on('general_messages_history', function (messages) {
+                console.log(messages);
+                const pane = document.getElementById('tab-pane-geral');
+                const messagesUl = pane.querySelector('.chat-messages');
+                messagesUl.innerHTML = ''; // Limpa antes de carregar
+                messages['messages'].forEach(msg => addMessageToPane('tab-pane-geral', msg));
+
+                // Notifica os outros na sala que um novo usuário entrou
+                showUserJoinedToChat(`aviso - ${myUsername} entrou na sala geral.`)
+                // console.log(`${myUsername} entrou na sala geral.`);
+            });
+
+            socket.on('private_messages_history', function (data) {
+                const paneId = `tab-pane-${data.with_user_id}`;
+                const pane = document.getElementById(paneId);
+                if (!pane) return;
+
+                const messagesUl = pane.querySelector('.chat-messages');
+                messagesUl.innerHTML = ''; // Limpa antes de carregar
+                data.messages.forEach(msg => addMessageToPane(paneId, msg));
+            });
+
+            // --- INICIALIZAÇÃO ---
+            function initializeChat() {
+                // Cria a aba "Geral"
+                chatTabsList.innerHTML = `
+            <li class="nav-item">
+                <button class="nav-link active" id="tab-btn-geral" data-bs-toggle="tab" data-bs-target="#tab-pane-geral" type="button" role="tab" aria-controls="tab-pane-geral" aria-selected="true">Geral</button>
+            </li>`;
+                chatTabsContent.innerHTML = `
+            <div class="tab-pane fade show active" id="tab-pane-geral" role="tabpanel">
+                <ul class="list-unstyled overflow-auto chat-messages" style="height: 60vh;"></ul>
+            </div>`;
+
+                // Solicita o histórico geral ao se conectar
+                socket.emit('load_general_messages', { chat_id: "{{ chat_id }}" });
+            }
+
+            initializeChat();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cadastro de Aluno</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 mt-5"> <h1 class="mb-4 text-center">Insira as Informações do novo Aluno</h1>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                            value="{{ request.form.get('name', '') }}" placeholder="Digite o nome" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="age" class="form-label">Idade</label>
+                        <input type="number" class="form-control" id="age" name="age"
+                            value="{{ request.form.get('age', '') }}" placeholder="Digite a idade" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="course" class="form-label">Curso</label>
+                        <input type="text" class="form-control" id="course" name="course"
+                            value="{{ request.form.get('course', '') }}" placeholder="Digite o curso" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="text" class="form-control" id="email" name="email"
+                            value="{{ request.form.get('email', '') }}" placeholder="Digite o seu email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control is-invalid" id="username" name="username"
+                            value="{{ request.form.get('username', '') }}" required>
+
+                        {% if error %}
+                        <div class="invalid-feedback">
+                            {{ error }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                            value="{{ request.form.get('username', '') }}" placeholder="Digite a senha" required>
+                    </div>
+
+                    <div class="card border-primary mb-4 mt-4 shadow-sm" style="background-color: #f8faff;">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-person-gear"></i> Etapa Importante: Perfil de Aprendizagem
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted mb-4">
+                                Estas perguntas ajudam nosso sistema a personalizar o ensino para você. Por favor, responda com atenção.
+                            </p>
+
+                            <div class="mb-3">
+                                <label for="pref_content_type" class="form-label fw-bold">Ao aprender um novo tópico, você prefere começar por:</label>
+                                <select class="form-select" id="pref_content_type" name="pref_content_type" aria-label="Seleção de preferência de conteúdo" required>
+                                    <option selected disabled value="">Abra este menu de seleção</option>
+                                    <option value="teoria">Definições Teóricas</option>
+                                    <option value="exemplos">Exemplos Práticos</option>
+                                    <option value="exercicios">Exercícios de Fixação</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="pref_communication" class="form-label fw-bold">Qual sua forma preferida de interação?</label>
+                                <select class="form-select" id="pref_communication" name="pref_communication" aria-label="Seleção de preferência de comunicação" required>
+                                    <option selected disabled value="">Abra este menu de seleção</option>
+                                    <option value="chat">Chat (Texto)</option>
+                                    <option value="video">Videoconferência</option>
+                                    <option value="none">Estudo Individual (Sem interação síncrona)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-check form-switch mt-3">
+                                <input class="form-check-input" type="checkbox" id="pref_receive_email" name="pref_receive_email" value="true" checked>
+                                <label class="form-check-label" for="pref_receive_email">Desejo receber materiais complementares por e-mail</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 mb-5">
+                        <button type="submit" class="btn btn-success btn-lg">Criar Aluno</button>
+                        <a href="/students" class="btn btn-secondary">Ver Todos os Alunos</a>
+                    </div>
+                </form>
+                
+                <div class="col-md-12 mt-3 text-center mb-5">
+                    <a href="/" class="btn btn-link">Voltar Para o Home Page</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

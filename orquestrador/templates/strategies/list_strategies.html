@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Estratégias</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">📋 Estratégias</h2>
+            <a href="/" class="btn btn-outline-secondary">← Voltar</a>
+        </div>
+
+        {% for strategy in strategies %}
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">🎯 <strong>{{ strategy.name }}</strong></h5>
+                    <span class="badge bg-success fs-6">Nota: {{ strategy.score }}</span>
+                </div>
+
+                <h6 class="card-subtitle text-muted mt-3 mb-2">Táticas:</h6>
+
+                {% if strategy.tatics %}
+                <ul class="list-group list-group-flush">
+                    {% for tatic in strategy.tatics %}
+                    <li class="list-group-item px-0">
+                        {% if tatic is string %}
+                        {{ tatic }}
+                        {% else %}
+                        <div class="d-flex justify-content-between align-items-start flex-wrap">
+                            <div class="me-3">
+                                <strong>{{ tatic.name }}</strong><br>
+                                <small class="text-muted">
+                                    {% if tatic.description and tatic.description != 'hidden' %}
+                                        Descrição: {{ tatic.description }}
+                                    {% else %}
+                                        Sem descrição
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill mt-2">{{ tatic.time }} min</span>
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted fst-italic">Nenhuma tática cadastrada.</div>
+                {% endif %}
+            </div>
+
+            <div class="card-footer bg-transparent border-0 text-end">
+                <form action="/strategies/remove/{{ strategy.id }}" method="POST"
+                    onsubmit="return confirm('Tem certeza que deseja deletar esta estratégia?');" class="d-inline">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">🗑️ Deletar Estratégia</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+
+</html>

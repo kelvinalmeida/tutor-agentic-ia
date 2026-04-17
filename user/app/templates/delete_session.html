@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escolha uma Sessão para finalizar</title>
+</head>
+<body>
+    <h1>Lista de Sessões Criadas</h1>
+
+    {% if sessions %}
+        <table border="1">
+            <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Estratégia</th>
+            </tr>
+            {% for session in sessions %}
+            <tr>
+                <td><a href="./end/{{ session.id }}">{{ session.id }}</a></td>
+                <td>{{ session.status }}</td>
+                <td>{{ session.strategy }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>Nenhuma sessão foi criada ainda.</p>
+    {% endif %}
+
+        <a href="/sessions">Ver todas as sessões</a>
+    <br>
+    <a href="/">Criar Nova Sessão</a>
+</body>
+</html>

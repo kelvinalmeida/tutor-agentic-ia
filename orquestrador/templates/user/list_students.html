@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lista de Alunos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+</head>
+
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="/" class="btn btn-outline-primary">
+                ⬅ Voltar
+            </a>
+            <h1 class="flex-grow-1 text-center m-0">Lista de Estudantes</h1>
+            <!-- Espaço vazio para manter o título centralizado -->
+            <div style="width: 90px;"></div>
+        </div>
+
+        <div class="row g-4">
+            {% for student in students %}
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ student.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@{{ student.username }}</h6>
+                        <p class="card-text">
+                            <strong>Curso:</strong> {{ student.course }}<br>
+                            <strong>Idade:</strong> {{ student.age }}<br>
+                            <strong>Tipo:</strong> {{ student.type }}<br>
+
+                            {% if current_user and current_user.type == 'teacher' %}
+                            <strong>ID:</strong> {{ student.id }}<br>
+                            <strong>username:</strong> {{ student.username }}<br>
+                            <strong>password:</strong> {{ student.password }}<br>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="col-md-12 mt-4 text-center">
+                <a href="/" class="btn btn-secondary">Voltar Para o Home Page</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

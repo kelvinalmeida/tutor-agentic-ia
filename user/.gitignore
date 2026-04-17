@@ -1,0 +1,42 @@
+# Ambiente virtual
+venv/
+.env/
+*.env
+
+# Arquivos Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configurações locais
+instance/
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# Cache e diretórios temporários
+*.pid
+*.seed
+*.out
+*.toc
+*.tmp
+*.temp
+*.swp
+
+# Arquivos de IDE
+.vscode/
+.idea/
+
+# Arquivos de configuração sensíveis
+config.env
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+
+./uploads//uploads/*
+!/uploads/.gitkeep

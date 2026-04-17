@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Session Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        #tacticTimer {
+            font-size: 3rem;
+            padding: 1rem 2rem;
+        }
+
+        #tacticName {
+            font-size: 1.5rem;
+        }
+
+        .centered-controls {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .badge-large {
+            font-size: 1.2rem;
+            padding: 0.6rem 1rem;
+        }
+
+        .session-code {
+            font-size: 1.2rem;
+        }
+        
+        .ai-wrapper {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); /* Degradê Azul Ciano Brilhante */
+            /* Opção alternativa (Roxo/Azul): background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            border-radius: 15px;
+            padding: 15px 25px;
+            box-shadow: 0 10px 20px rgba(0, 198, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .ai-wrapper:hover {
+            transform: translateY(-2px);
+        }
+
+        .ai-label {
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .ai-icon-bg {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        /* Switch Customizado */
+        .form-check-input.ai-switch {
+            width: 3rem;
+            height: 1.5rem;
+            background-color: rgba(255,255,255,0.4);
+            border: 2px solid rgba(255,255,255,0.6);
+            cursor: pointer;
+        }
+        
+        .form-check-input.ai-switch:checked {
+            background-color: #fff;
+            border-color: #fff;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2300f2fe'/%3e%3c/svg%3e");
+        }
+
+        .form-check-input.ai-switch:focus {
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+        }
+
+        /* --- Estilo do Spinner de Pensamento --- */
+        .agent-thinking-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-left: 4px solid #4facfe;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin: 20px auto;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .pulsing-brain {
+            font-size: 2rem;
+            color: #4facfe;
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Estilo da Caixa de Raciocínio (Resultado) --- */
+        .agent-reasoning-card {
+            background: #ffffff;
+            border: 1px solid #e1e4e8;
+            border-top: 4px solid #764ba2; /* Roxo para diferenciar */
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            text-align: left;
+            position: relative;
+        }
+
+        .reasoning-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #764ba2;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .reasoning-content {
+            font-size: 1.05rem;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <div class="container my-5">
+        <a href="/sessions" class="btn btn-outline-primary m-3">← Back to Sessions</a>
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Session #{{ session.id }}</h4>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">
+                    Status:
+                    <span class="badge
+                        {% if session.status == 'in-progress' %}
+                            bg-success
+                        {% elif session.status == 'finished' %}
+                            bg-warning text-dark
+                        {% else %}
+                            bg-secondary
+                        {% endif %}">
+                        {{ session.status.capitalize() }}
+                    </span>
+                    <span class="badge bg-warning badge-large">
+                        Tempo de Aula {{ session.full_tatics_time }} min
+                    </span>
+                </h5>
+
+                <!-- Código da Sessão -->
+                <p class="session-code my-5">
+                    Código da Sessão:
+                    <span class="badge bg-secondary" id="sessionCode">{{ session.code }}</span>
+                    <button id="copyBtn" class="btn btn-sm btn-outline-primary" onclick="copyCode()">Copiar</button>
+                </p>
+
+                <!-- Botão e cronômetro centralizados -->
+                <div class="centered-controls">
+
+                    <button id="endSessionBtn" class="btn 
+                    {% if current_user.type != 'teacher'%}
+                        d-none
+                    {% endif %}
+                    btn-outline-danger btn-sm mb-4">Encerrar Sessão</button>
+
+                    <div class="d-block"></div>
+
+                    {% if current_user.type == 'teacher' %}
+                    <div class="ai-wrapper">
+                        <div class="ai-label">
+                            <div class="ai-icon-bg">
+                                <i class="bi bi-robot"></i>
+                            </div>
+                            <span>Agente Estrategista (IA)</span>
+                        </div>
+                        
+                        <div class="form-check form-switch m-0 p-0 d-flex align-items-center">
+                            <input class="form-check-input ai-switch ms-3" type="checkbox" id="agentToggle"
+                                {% if session.status == 'in-progress' %} disabled {% endif %}
+                                {% if session.use_agent %} checked {% endif %}>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-block"></div>
+
+                    <button id="startSessionBtn" class="btn 
+                    {% if current_user.type != 'teacher'%}
+                        d-none
+                    {% endif %}
+                    btn-success btn-lg px-5 py-3 shadow mb-4 fw-bold text-uppercase rounded-pill">
+                        <i class="bi bi-play-circle-fill me-2"></i> Iniciar Sessão
+                    </button>
+
+                    <div>
+                        <h5 id="tacticName" class="text-primary fw-bold mt-2 display-6">Aguardando início...</h5>
+
+                        <div class="d-flex justify-content-center align-items-center gap-3 my-4">
+                             <button id="prevTacticBtn" class="btn btn-outline-secondary rounded-circle p-3
+                             {% if current_user.type != 'teacher'%} d-none {% endif %}" title="Anterior">
+                                <i class="bi bi-arrow-left fs-4"></i>
+                             </button>
+
+                             <div id="tacticTimer" class="badge bg-dark rounded shadow border border-secondary" style="min-width: 180px;">--</div>
+
+                             <button id="nextTacticBtn" class="btn btn-primary rounded-circle p-3 shadow-lg
+                             {% if current_user.type != 'teacher'%} d-none {% endif %}" title="Próximo (IA decide se ativo)">
+                                <i class="bi bi-arrow-right fs-4"></i>
+                             </button>
+                        </div>
+
+                        <div id="agentThinking" class="d-none">
+                            <div class="agent-thinking-container">
+                                <i class="bi bi-cpu-fill pulsing-brain"></i>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-primary">Processando Estratégia...</h6>
+                                    <small class="text-muted">Analisando desempenho da turma e perfil de aprendizado.</small>
+                                </div>
+                                <div class="spinner-border text-primary ms-auto" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                            </div>
+                        </div>
+
+                        <div id="agentReasoningContainer">
+                            </div>
+
+                        <div id="current_tatic_description" class="alert alert-light border shadow-sm text-muted fst-italic mt-3" role="alert">
+                            </div>
+                        
+                        <div id="tatic_here" class="mt-4"></div>
+
+                        {% if session.domains %}
+                        <div id="pdf_data" data-pdfs='{{ session.domains[0].pdfs | tojson | safe }}'></div>
+                        {% else %}
+                        <p class="text-muted small mt-3">Nenhum domínio associado a essa sessão.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Avaliação da Sessão -->
+                <div class="card mb-4 shadow-sm border-warning">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-warning">Avaliação da Aula</h5>
+
+                        <div id="rating-container">
+                            <!-- Stars for Student -->
+                            {% if current_user.type == 'student' %}
+                            <div class="fs-2 text-warning mb-2" id="star-rating" style="cursor: pointer;">
+                                <i class="bi bi-star" data-value="1" onclick="submitRating(1)"></i>
+                                <i class="bi bi-star" data-value="2" onclick="submitRating(2)"></i>
+                                <i class="bi bi-star" data-value="3" onclick="submitRating(3)"></i>
+                                <i class="bi bi-star" data-value="4" onclick="submitRating(4)"></i>
+                                <i class="bi bi-star" data-value="5" onclick="submitRating(5)"></i>
+                            </div>
+                            <small class="text-muted" id="user-rating-msg">Toque para avaliar</small>
+                            {% endif %}
+
+                            <!-- Stats for Everyone -->
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark fs-6">
+                                    <i class="bi bi-star-fill"></i> <span id="avg-rating">--</span>
+                                </span>
+                                <span class="text-muted ms-2">(<span id="rating-count">0</span> votos)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estratégias -->
+                <div class="mb-4">
+                    <h5 class="text-decoration-underline">Strategies & Tactics</h5>
+                    {% if session.strategies %}
+                    {% for strategy in session.strategies %}
+                    <div class="mb-4">
+                        <h6 class="text-primary">{{ strategy.name }}</h6>
+                        {% if strategy.tatics %}
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Táticas</th>
+                                    <th>Time (min)</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tatic in strategy.tatics %}
+                                <tr>
+                                    <td>{{ tatic.name }}</td>
+                                    <td>{{ tatic.time }}</td>
+                                    <td>{{ tatic.description or '—' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p class="text-muted"><em>No tactics for this strategy.</em></p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <em>No strategies assigned.</em>
+                    {% endif %}
+                </div>
+
+                <!-- Notas extras, colocada pelo professor! -->
+                <h5 class="mb-4 text-decoration-underline d-flex align-items-center">
+                    <i class="bi bi-pencil-square my-2"></i>Notas Extras
+                </h5>
+                {% if current_user.type != 'student' %}
+                <div class="container my-5">
+                    {% if session.students %}
+
+                    {% for student in session.students_ids_with_usernames %}
+                    <form action="/studant/extranotes/{{student.id}}" method="post"
+                        class="row g-2 align-items-center mb-3">
+                        <div class="col-auto">
+                            <span class="badge bg-primary fs-6">{{ student.username }}</span>
+                        </div>
+                        <div class="col-auto">
+                            <input type="number" name="extra_notes" min="0" max="10" class="form-control"
+                                placeholder="0 ... 10" required>
+                            <input type="text" name="session_id" value="{{ session.id }}" hidden>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-success">Atribuir Nota</button>
+                        </div>
+                    </form>
+                    {% endfor %}
+                    {% else %}
+                    <em class="text-muted">Nenhum aluno atribuído.</em>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if current_user.type == 'teacher' %}
+                <div class="container my-4">
+                    <div class="row g-3" id="student-extra-note-card">
+                        {% for ext_note in session.extra_notes %}
+                        <div class="col-sm-6 col-md-4 col-lg-3" id="student-extra-note-card-created">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">{{ ext_note.estudante_username }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-success">Nota Atribuída:</h6>
+                                    <p class="card-text display-6">{{ ext_note.extra_notes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                <!-- Notas Extras, colocada pelo aluno! -->
+                {% if current_user.type == 'student' %}
+                <div class="container my-4">
+                    <div class="row g-3" id="student-extra-note-card">
+                        {% if session.extra_notes %}
+                        {% for ext_note in session.extra_notes %}
+                        {% if ext_note.estudante_username == current_user.username %}
+                        <div class="col-sm-6 col-md-4 col-lg-3" id="student-extra-note-card-created">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">{{ ext_note.estudante_username }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-success">Nota Atribuída:</h6>
+                                    <p class="card-text display-6">{{ ext_note.extra_notes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+
+                <!-- Resultado dos Exercícios -->
+                <h5 class="text-decoration-underline">Exercícios Respondidos nesta sessão</h5>
+                {% if current_user.type != 'student' %}
+                <div class="container my-4" id="student-answers-card">
+                    {% if session.verified_answers %}
+                    {% for ans in session.verified_answers %}
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <h5 class="card-title text-primary">{{ ans.student_name }}</h5>
+                                <h6 class="card-subtitle mb-3 text-success">Pontuação: {{ ans.score }}</h6>
+                                {% for answer in ans.answers %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center"
+                                    id="student-answers-card-created">
+                                    <span>Exercício <strong>{{ answer.exercise_id }}</strong> | Resposta: {{
+                                        answer.answer }}</span>
+                                    {% if answer.correct %}
+                                    <span class="badge bg-success">Acertou</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Errou</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div id="student-answers-card" class="container my-4">
+                    {% for ans in session.verified_answers %}
+                    {% if ans.student_name == current_user.username %}
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ ans.student_name }}</h5>
+                            <h6 class="card-subtitle mb-3 text-success">Pontuação: {{ ans.score }}</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for answer in ans.answers %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center"
+                                    id="student-answers-card-created">
+                                    <span>Exercício <strong>{{ answer.exercise_id }}</strong> | Resposta: {{
+                                        answer.answer
+                                        }}</span>
+                                    {% if answer.correct %}
+                                    <span class="badge bg-success">Acertou</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Errou</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+
+
+                <!-- Professores -->
+                <div class="m-3">
+                    <h5 class="text-decoration-underline">Teachers</h5>
+                    {% if session.teachers %}
+                    {% for teacher in session.teachers %}
+                    <span class="badge bg-success me-1">{{ teacher }}</span>
+                    {% endfor %}
+                    {% else %}
+                    <em>No teachers assigned.</em>
+                    {% endif %}
+                </div>
+
+                <!-- Alunos -->
+                <div class="m-3">
+                    <h5 class="text-decoration-underline">Students</h5>
+                    {% if session.students %}
+                    {% for student in session.students %}
+                    <span class="badge bg-secondary me-1">{{ student }}</span>
+                    {% endfor %}
+                    {% else %}
+                    <em>No students assigned.</em>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        window.session_id = "{{ session.id }}";
+        window.token = "{{ token }}";
+        let session_json = {{ session | tojson }};
+        let current_user_json = {{ current_user | tojson }};
+        window.current_strategy_id = "{{ session.strategies[0].id if session.strategies else '' }}";
+        window.domain_id = session_json.domains[0].id;
+        window.my_username = current_user_json.username;
+        window.my_id = current_user_json.id;
+        console.log("current_user:", current_user_json);
+        // console.log(typeof session_json); // Agora será 'object'
+        // console.log()
+        // console.log(typeof session_json); // Agora será 'object'
+        // window.myUserId = "{{ current_user['id'] }}";
+        // window.chatId = "{{ chat_id }}";
+        // console.log("Chat ID:", window.chatId);
+    </script>
+
+    <script>
+        function copyCode() {
+            const codeText = document.getElementById("sessionCode").innerText;
+            const copyButton = document.getElementById("copyBtn");
+
+            navigator.clipboard.writeText(codeText)
+                .then(() => {
+                    copyButton.innerHTML = "✅ Copiado!";
+                    copyButton.classList.remove("btn-outline-primary");
+                    copyButton.classList.add("btn-success");
+
+                    setTimeout(() => {
+                        copyButton.innerHTML = "Copiar";
+                        copyButton.classList.remove("btn-success");
+                        copyButton.classList.add("btn-outline-primary");
+                    }, 2000);
+                })
+                .catch(err => {
+                    copyButton.innerHTML = "Erro!";
+                    copyButton.classList.remove("btn-outline-primary");
+                    copyButton.classList.add("btn-danger");
+
+                    setTimeout(() => {
+                        copyButton.innerHTML = "Copiar";
+                        copyButton.classList.remove("btn-danger");
+                        copyButton.classList.add("btn-outline-primary");
+                    }, 2000);
+                });
+        }
+
+        async function loadRating() {
+            try {
+                const res = await fetch(`/sessions/${window.session_id}/rating`);
+                const data = await res.json();
+
+                const avgEl = document.getElementById('avg-rating');
+                const countEl = document.getElementById('rating-count');
+
+                if(avgEl) avgEl.innerText = data.average ? parseFloat(data.average).toFixed(1) : '0.0';
+                if(countEl) countEl.innerText = data.count || 0;
+
+                if (window.current_user_json.type === 'student' && data.user_rating) {
+                    updateStars(data.user_rating);
+                    const msgEl = document.getElementById('user-rating-msg');
+                    if(msgEl) msgEl.innerText = "Sua avaliação: " + data.user_rating;
+                }
+            } catch (e) {
+                console.error("Error loading rating", e);
+            }
+        }
+
+        async function submitRating(value) {
+            try {
+                const res = await fetch(`/sessions/${window.session_id}/rate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({rating: value})
+                });
+                if (res.ok) {
+                    updateStars(value);
+                    const msgEl = document.getElementById('user-rating-msg');
+                    if(msgEl) msgEl.innerText = "Sua avaliação: " + value;
+                    loadRating(); // Refresh stats
+                }
+            } catch (e) {
+                console.error("Error submitting rating", e);
+            }
+        }
+
+        function updateStars(value) {
+            const stars = document.querySelectorAll('#star-rating i');
+            stars.forEach(s => {
+                const v = parseInt(s.getAttribute('data-value'));
+                if (v <= value) {
+                    s.classList.remove('bi-star');
+                    s.classList.add('bi-star-fill');
+                } else {
+                    s.classList.remove('bi-star-fill');
+                    s.classList.add('bi-star');
+                }
+            });
+        }
+
+        // Call on load
+        document.addEventListener('DOMContentLoaded', loadRating);
+    </script>
+
+    <!-- Bootstrap Bundle (inclui Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="{{ url_for('static', filename='js/show_session.js') }}"></script>
+
+</body>
+
+</html>

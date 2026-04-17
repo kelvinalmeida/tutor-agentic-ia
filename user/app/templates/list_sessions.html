@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Sessões</title>
+</head>
+
+<body>
+    <h1>Lista de Sessões Criadas</h1>
+
+    {% if students %}
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Status</th>
+        </tr>
+        {% for student in students %}
+        <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>Nenhum aluno foi criada ainda.</p>
+    {% endif %}
+
+    <br>
+    <a href="/create/student">Criar Novo aluno</a>
+</body>
+
+</html>

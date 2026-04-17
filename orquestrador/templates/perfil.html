@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+
+<body class="bg-light text-center">
+    <div class="container mt-5">
+        <div class="d-flex align-items-center justify-content-center gap-4">
+            <!-- Imagem do usuário -->
+            <div class="shadow p-3 border border-primary rounded-circle">
+                <img src="https://icon-library.com/images/user-png-icon/user-png-icon-16.jpg" alt="Minha Imagem"
+                    class="img-fluid" style="width: 120px; height: 120px;">
+            </div>
+
+            <!-- Textos do perfil -->
+            <div class="shadow p-4 bg-white rounded text-start">
+                <h2 class="mb-4">Welcome {{ user.name }} to Your Perfil</h2>
+                <p><strong>User ID:</strong> {{ user.id }}</p>
+                <p><strong>User Name:</strong> {{ user.username }}</p>
+                <p><strong>User Age:</strong> {{ user.age }}</p>
+                <p><strong>User Course:</strong> {{ user.course }}</p>
+            </div>
+        </div>
+
+        <a href="/" class="btn btn-primary mt-4">Voltar para Home Page</a>
+    </div>
+</body>
+
+</html>

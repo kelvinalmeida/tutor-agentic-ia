@@ -1,0 +1,1 @@
+docker-compose exec db pg_dump -U user -d postgres > backup.sql

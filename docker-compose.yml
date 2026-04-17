@@ -1,0 +1,166 @@
+services:
+  orquestrador:
+    build: ./orquestrador/
+    container_name: orquestrador_container
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./orquestrador:/app # Monta o diretório local no container para hot reload
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py # Substitua se o arquivo principal tiver outro nome
+      - PYTHONUNBUFFERED=1
+    command: "flask run --host=0.0.0.0"
+    depends_on:
+      - agente_sessao
+      - user
+
+  agente_sessao:
+    build: ./agente_sessao/
+    container_name: controller_container
+    working_dir: /app
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./agente_sessao:/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+      # - DATABASE_URL=postgresql://user:secret@agente_sessao-db:5432/postgres
+    command: "flask run --host=0.0.0.0"
+    depends_on:
+      - agente_sessao-db
+  
+  agente_sessao-db:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
+      LC_COLLATE: C.UTF-8
+      LC_CTYPE: C.UTF-8
+    volumes:
+      - db_data_sessao:/var/lib/postgresql/18/data
+      - ./agente_sessao/agente_sessao-db.sql:/docker-entrypoint-initdb.d/agente_sessao-db.sql
+    # You might want to map this to a different port to inspect it
+    ports:
+      - "5439:5432"
+  
+  user-db:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
+      LC_COLLATE: C.UTF-8
+      LC_CTYPE: C.UTF-8
+    volumes:
+      - db_data_user:/var/lib/postgresql/18/data
+      - ./user/user-db.sql:/docker-entrypoint-initdb.d/user-db.sql
+    # You might want to map this to a different port to inspect it
+    ports:
+      - "5433:5432"
+
+  user:
+    build: ./user/
+    container_name: user_container
+    working_dir: /app
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./user:/app
+    env_file:
+      - ./user/config.env
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://user:secret@user-db:5432/postgres
+    command: "flask run --host=0.0.0.0"
+    depends_on:
+      - user-db
+
+  strategies-db:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
+      LC_COLLATE: C.UTF-8
+      LC_CTYPE: C.UTF-8
+    volumes:
+      - db_data_strategies:/var/lib/postgresql/18/data
+      - ./strategies/strategies-db.sql:/docker-entrypoint-initdb.d/strategies-db.sql
+    # You might want to map this to a different port to inspect it
+    ports:
+      - "5436:5432"
+
+  strategies:
+    build: ./strategies/
+    container_name: strategies_container
+    working_dir: /app
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./strategies:/app
+    env_file:
+      - ./strategies/config.env
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://user:secret@strategies-db:5432/postgres
+    command: "flask run --host=0.0.0.0"
+    depends_on:
+      - strategies-db
+
+  domain:
+    build: ./domain/
+    container_name: domain_container
+    working_dir: /app
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./domain:/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+      # - DATABASE_URL=postgresql://user:secret@domain-db:5432/postgres
+    command: "flask run --host=0.0.0.0"
+    depends_on:
+      - domain-db
+
+  domain-db:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
+      LC_COLLATE: C.UTF-8
+      LC_CTYPE: C.UTF-8
+    volumes:
+      - db_data_domain:/var/lib/postgresql/18/data
+      - ./domain/domain-db.sql:/docker-entrypoint-initdb.d/domain-db.sql
+    # You might want to map this to a different port to inspect it
+    ports:
+      - "5437:5432"
+
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+
+# Volumes nomeados (se precisar persistência em banco ou arquivos locais)
+volumes:
+  db_data_user:
+  db_data_strategies:
+  db_data_domain:
+  db_data_sessao:

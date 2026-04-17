@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chat</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Chat</h1>
+    <ul id="messages"></ul>
+
+    <!-- form para capturar o Enter -->
+    <form id="chatForm">
+        <input id="username" placeholder="Your name" autocomplete="off" required>
+        <input id="myMessage" placeholder="Type a message..." autocomplete="off" required>
+        <button type="submit">Send</button>
+    </form>
+
+
+    <script>
+        // conectar com o servidor Socket.IO
+        var socket = io();
+
+        // quando conectado
+        socket.on('connect', function () {
+            console.log('Connected to server');
+
+            // pedir mensagens antigas
+            socket.emit('load_messages');
+        });
+
+        // quando uma mensagem chega
+        socket.on('message', function (msg) {
+            console.log(msg); // pra ver o que chegou!
+
+            document.getElementById('messages').innerHTML = ''; // limpa a lista de mensagens antes de adicionar novas
+
+            const mensagens = msg['messages']; // pega a lista de mensagens
+            // console.log(mensagens);
+            mensagens.forEach(mensagem => {
+                var item = document.createElement('li');
+                item.textContent = `${mensagem.username}: ${mensagem.content}`; // agora usa corretamente
+                document.getElementById('messages').appendChild(item);
+            });
+        });
+
+
+        // enviar mensagem
+        document.getElementById('chatForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const username = document.getElementById("username").value.trim();
+            const message = document.getElementById("myMessage").value.trim();
+
+            if (username !== "" && message !== "") {
+                socket.emit('message', { id: 1, username: username, content: message });
+                document.getElementById("myMessage").value = "";
+            }
+        });
+
+    </script>
+</body>
+
+</html>

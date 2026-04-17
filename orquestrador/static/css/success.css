@@ -1,0 +1,26 @@
+body {
+    background-color: #f0f8ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.success-container {
+    text-align: center;
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    color: green;
+}
+
+.btn-group a {
+    margin: 5px;
+}

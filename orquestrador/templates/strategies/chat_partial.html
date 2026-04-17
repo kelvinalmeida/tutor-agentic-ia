@@ -1,0 +1,58 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-header">
+
+                    <strong>Usuários Online</strong>
+                </div>
+                <ul id="user-list" class="list-group list-group-flush">
+                    <li class="list-group-item">Carregando...</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card shadow-sm chat-card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="chat-tabs-list" role="tablist">
+                    </ul>
+                </div>
+
+                <div class="card-body tab-content" id="chat-tabs-content">
+                </div>
+
+                <div class="card-footer">
+                    <form id="chatForm" class="d-flex">
+                        <!-- <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea> -->
+                        <input id="myMessage" class="form-control me-2 " placeholder="Digite uma mensagem..."
+                            autocomplete="off" required>
+                        <button type="submit" class="btn btn-primary">Enviar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    window.myUsername = "{{ current_user['username'] }}";
+    window.myUserId = "{{ current_user['id'] }}";
+    window.chatId = "{{ chat_id }}";
+    console.log("Chat ID:", window.chatId);
+</script>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+
+<!-- Bootstrap JS (necessário para tabs, modals, etc.) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ENjdO4Dr2bkBIFxQpeo5j84iQ5GkW3Dk5GX1kHfVf5tBtB6MWRxF0k0p6QvT+At5" crossorigin="anonymous">
+    </script>
+
+<!-- Socket.IO Client CDN (necessário para io() funcionar) -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"
+    integrity="sha384-P3xENtE8cNPKoZgydgQpFw3sbLknmkJzHE28+rLVblIfSHPQfrFEpVaaDj4M6t4M"
+    crossorigin="anonymous"></script>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>

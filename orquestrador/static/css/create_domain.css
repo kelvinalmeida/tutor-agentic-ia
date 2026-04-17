@@ -1,0 +1,19 @@
+.section-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #333;
+    margin-top: 20px;
+}
+
+.card-section {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.exercise-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}

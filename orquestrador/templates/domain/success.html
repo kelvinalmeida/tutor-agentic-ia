@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuário Criado com Sucesso</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/success.css') }}">
+</head>
+
+<body>
+
+    <div class="success-container">
+        <!-- Ícone de sucesso -->
+        <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+
+        <h2 class="text-success">Domínio Criado com Sucesso!</h2>
+
+        <div class="btn-group d-flex justify-content-center mt-4">
+            <a href="{{ url_for('domain.list_domains') }}" class="btn btn-primary">Ver todas os Domínios</a>
+            <a href="{{ url_for('session.create_session') }}" class="btn btn-secondary">Criar Sessão</a>
+            <a href="{{ url_for('login.home_page') }}" class="btn btn-info">Página Inicial</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

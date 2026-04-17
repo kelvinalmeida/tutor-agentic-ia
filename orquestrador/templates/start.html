@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Página de Login - SEP_ML</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+        }
+
+        .left-column {
+            background-color: #f8f9fa;
+            padding: 60px;
+        }
+
+        .right-column {
+            background-color: #0d6efd;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .btn-custom {
+            min-width: 220px;
+        }
+
+        .description {
+            margin-top: 20px;
+            font-size: 1.05rem;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+
+            .left-column,
+            .right-column {
+                padding: 30px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="row h-100">
+            <!-- Coluna Esquerda -->
+            <div class="col-md-6 left-column d-flex flex-column justify-content-center">
+                <h1 class="fw-bold text-primary">SEP_ML</h1>
+                <h5 class="text-muted">Sessões de Ensino Personalizadas</h5>
+                <p class="description mt-4">
+                    No contexto da estrutura de uma Sessão de Ensino Online da camada Tutor do FA_PorT (Medeiros et al.,
+                    96), tendo como público-alvo um grupo de alunos online. O sistema proposto SEP_ML (S)essões de
+                    (E)nsino (P)ersonalizadas utiliza um conjunto de táticas inteligentes de ensino adaptadas à
+                    realidade de cada aluno.
+                </p>
+            </div>
+
+            <!-- Coluna Direita -->
+            <div class="col-md-6 right-column">
+                <div class="text-center">
+                    <h3 class="mb-4 fw-light">Bem-vindo ao SEP_ML</h3>
+                    <a href="/login" class="btn btn-light btn-lg btn-custom">Fazer Login</a>
+                    <a href="/students/create" class="btn btn-outline-light btn-lg btn-custom my-3">Cadastrar Aluno</a>
+                    <a href="/teachers/create" class="btn btn-outline-light btn-lg btn-custom">Cadastrar Professor</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
