@@ -68,6 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
             .toLowerCase();
     }
 
+    function isDebateSincronoTactic(name) {
+        const normalized = normalizeTacticName(name);
+        // Aceita variações comuns: sincrono/sicrono, underscore/hífen e espaços.
+        return normalized === "debate sincrono" || normalized === "debate sicrono";
+    }
+
 
     function debateSicrono(id_chat) {
         fetch(`/chat_fragment/${id_chat}/${session_id}`)
@@ -186,9 +192,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 //     elementToRemove.remove(); // Remove o próprio elemento
                 // }
 
-                // Verifica se a tática atual é "Debate Sincrono" (aceita variações como debate_sincrono)
+                // Verifica se a tática atual é Debate Sincrono (inclui variação com typo: "sicrono")
                 const normalizedTacticName = normalizeTacticName(tacticName);
-                if (normalizedTacticName === "debate sincrono") {
+                if (isDebateSincronoTactic(normalizedTacticName)) {
 
                     // Evitar adicionar o botão várias vezes:
                     if (!document.getElementById("debate_sicrono")) {
@@ -201,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         id_chat = null;
                         for (let tatic_stra in strategyTactics) {
                             const tactic = strategyTactics[tatic_stra];
-                            if (normalizeTacticName(tactic?.name) === normalizedTacticName) {
+                            if (isDebateSincronoTactic(tactic?.name)) {
                                 id_chat = tactic?.chat_id;
                                 if (id_chat !== null && id_chat !== undefined && id_chat !== "") break;
                             }
@@ -210,7 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if ((id_chat === null || id_chat === undefined || id_chat === "") && Array.isArray(strategyTactics)) {
                             // Fallback defensivo: pega qualquer chat_id da tática de debate caso o nome não bata exatamente.
                             const debateWithChat = strategyTactics.find(t => (
-                                normalizeTacticName(t?.name) === "debate sincrono" &&
+                                isDebateSincronoTactic(t?.name) &&
                                 t?.chat_id !== null &&
                                 t?.chat_id !== undefined &&
                                 t?.chat_id !== ""
