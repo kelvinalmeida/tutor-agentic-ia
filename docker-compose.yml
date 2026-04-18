@@ -31,6 +31,8 @@ services:
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
       # - DATABASE_URL=postgresql://user:secret@agente_sessao-db:5432/postgres
+      - DATABASE_URL=${AGENTE_SESSAO_DATABASE_URL}
+      - GROQ_API_KEY=${AGENTE_SESSAO_GROQ_API_KEY}
     command: "flask run --host=0.0.0.0"
     depends_on:
       - agente_sessao-db
@@ -81,7 +83,7 @@ services:
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
       # - DATABASE_URL=postgresql://user:secret@user-db:5432/postgres
-      - DATABASE_URL=${DATABASE_USER_URL}
+      - DATABASE_URL=${USER_DATABASE_URL}
       - GROQ_API_KEY=${USER_GROQ_API_KEY}
     command: "flask run --host=0.0.0.0"
     depends_on:
@@ -110,14 +112,17 @@ services:
       - "5003:5003"
     volumes:
       - ./strategies:/app
-    env_file:
-      - ./strategies/config.env
+    # env_file:
+    #   - ./strategies/config.env
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://user:secret@strategies-db:5432/postgres
+      # - DATABASE_URL=postgresql://user:secret@strategies-db:5432/postgres
+      - DATABASE_URL=${STRATEGIES_DATABASE_URL}
+      # - GEMINI_API_KEY=${STRATEGIES_GEMINI_API_KEY}
+      - GROQ_API_KEY=${STRATEGIES_GROQ_API_KEY}
     command: "flask run --host=0.0.0.0"
     depends_on:
       - strategies-db
@@ -136,6 +141,8 @@ services:
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
       # - DATABASE_URL=postgresql://user:secret@domain-db:5432/postgres
+      - DATABASE_URL=${DOMAIN_DATABASE_URL}
+      - DOMAIN_BLOB_READ_WRITE_TOKEN=${DOMAIN_BLOB_READ_WRITE_TOKEN}
     command: "flask run --host=0.0.0.0"
     depends_on:
       - domain-db
