@@ -65,6 +65,8 @@ if (typeof window.ChatService === 'undefined') {
             console.log("[ChatService] Desconectado.");
             this.isConnected = false;
         });
+        this.socket.on('connect_error', (err) => this.notify('socket_error', err));
+        this.socket.on('error', (err) => this.notify('socket_error', err));
 
         // Eventos de Negócio
         this.socket.on('new_general_message', (msg) => this.notify('general_message', msg));
@@ -164,6 +166,7 @@ if (typeof window.ChatUI === 'undefined') {
             form: document.getElementById('chatForm'),
             input: document.getElementById('myMessage')
         };
+        this.loadingTimeouts = new Map();
 
         // Bindings para não perder o 'this'
         this.handleUserClick = this.handleUserClick.bind(this);
@@ -177,6 +180,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.onHistoryPrivate = this.onHistoryPrivate.bind(this);
         this.onUserListUpdate = this.onUserListUpdate.bind(this);
         this.onOnlineUsersUpdate = this.onOnlineUsersUpdate.bind(this);
+        this.onSocketError = this.onSocketError.bind(this);
     }
 
     init() {
@@ -233,6 +237,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.service.subscribe('history_private', this.onHistoryPrivate);
         this.service.subscribe('user_list_update', this.onUserListUpdate);
         this.service.subscribe('online_users_update', this.onOnlineUsersUpdate);
+        this.service.subscribe('socket_error', this.onSocketError);
     }
 
     unsubscribeFromService() {
@@ -242,6 +247,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.service.unsubscribe('history_private', this.onHistoryPrivate);
         this.service.unsubscribe('user_list_update', this.onUserListUpdate);
         this.service.unsubscribe('online_users_update', this.onOnlineUsersUpdate);
+        this.service.unsubscribe('socket_error', this.onSocketError);
     }
 
     // --- Lógica de UI ---
@@ -402,6 +408,7 @@ if (typeof window.ChatUI === 'undefined') {
 
     onHistoryGeneral(data) {
         console.log("[ChatUI] Histórico geral recebido.", data);
+        this.clearLoadingTimeout('tab-pane-geral');
         const pane = document.getElementById('tab-pane-geral');
         if (pane) {
             const ul = pane.querySelector('.chat-messages');
@@ -421,6 +428,7 @@ if (typeof window.ChatUI === 'undefined') {
         const partner = data.target_username; // Quem eu estou conversando
 
         const paneId = `tab-pane-${partner}`;
+        this.clearLoadingTimeout(paneId);
         const pane = document.getElementById(paneId);
         if (pane) {
             const ul = pane.querySelector('.chat-messages');
@@ -449,6 +457,7 @@ if (typeof window.ChatUI === 'undefined') {
                 <p class="mt-2 text-muted animate-pulse">Carregando mensagens...</p>
             </li>
         `;
+        this.startLoadingTimeout(paneId);
     }
 
     showNoMessages(paneId) {
@@ -463,6 +472,46 @@ if (typeof window.ChatUI === 'undefined') {
                 <p class="mt-3 text-muted">Sem mensagens.</p>
             </li>
         `;
+    }
+
+    showLoadError(paneId, message = 'Não foi possível carregar as mensagens.') {
+        const pane = document.getElementById(paneId);
+        if (!pane) return;
+        const ul = pane.querySelector('.chat-messages');
+        if (!ul) return;
+
+        ul.innerHTML = `
+            <li class="text-center my-5 no-messages-indicator">
+                <i class="bi bi-exclamation-triangle display-5 text-warning"></i>
+                <p class="mt-3 text-muted">${message}</p>
+            </li>
+        `;
+    }
+
+    startLoadingTimeout(paneId) {
+        this.clearLoadingTimeout(paneId);
+        const timeoutId = setTimeout(() => {
+            const pane = document.getElementById(paneId);
+            if (!pane) return;
+            const loadingIndicator = pane.querySelector('.loading-indicator');
+            if (loadingIndicator) {
+                this.showLoadError(paneId, 'Tempo de carregamento excedido. Verifique a conexão e tente novamente.');
+            }
+        }, 7000);
+        this.loadingTimeouts.set(paneId, timeoutId);
+    }
+
+    clearLoadingTimeout(paneId) {
+        const timeoutId = this.loadingTimeouts.get(paneId);
+        if (!timeoutId) return;
+        clearTimeout(timeoutId);
+        this.loadingTimeouts.delete(paneId);
+    }
+
+    onSocketError(err) {
+        console.error("[ChatUI] Erro ao carregar chat:", err);
+        this.clearLoadingTimeout('tab-pane-geral');
+        this.showLoadError('tab-pane-geral');
     }
 
         onUserListUpdate(userListDataString) {
