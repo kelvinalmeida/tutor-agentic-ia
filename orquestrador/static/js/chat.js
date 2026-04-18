@@ -103,7 +103,7 @@ if (typeof window.ChatService === 'undefined') {
         }
 
     loadGeneralHistory() {
-        if (this.socket && this.chatId) {
+        if (this.socket && this.chatId && this.socket.connected) {
             console.log("[ChatService] Solicitando histórico geral...");
             this.socket.emit('load_general_messages', { chat_id: this.chatId });
             return;
@@ -122,7 +122,7 @@ if (typeof window.ChatService === 'undefined') {
     }
 
     loadPrivateHistory(targetUsername) {
-        if (this.socket && this.chatId) {
+        if (this.socket && this.chatId && this.socket.connected) {
             const myUsername = window.myUsername;
             this.socket.emit('load_private_messages', {
                 myUsername: myUsername,
@@ -152,7 +152,7 @@ if (typeof window.ChatService === 'undefined') {
             content: content
         };
 
-        if (this.socket) {
+        if (this.socket && this.socket.connected) {
             this.socket.emit('general_message', payload);
             return;
         }
@@ -180,7 +180,7 @@ if (typeof window.ChatService === 'undefined') {
             chat_id: this.chatId
         };
 
-        if (this.socket) {
+        if (this.socket && this.socket.connected) {
             this.socket.emit('private_message', payload);
             return;
         }
