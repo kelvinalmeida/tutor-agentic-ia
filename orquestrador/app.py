@@ -1,9 +1,6 @@
 from flask import Flask
-from flask_socketio import SocketIO
 
-# from .routes import register_routes
-
-socketio = SocketIO()
+from extensions import socketio
 
 app = Flask(__name__)
 app.secret_key = "sua_chave_super_secreta"
@@ -30,4 +27,3 @@ app.register_blueprint(agete_user_bp)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
