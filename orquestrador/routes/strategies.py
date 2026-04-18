@@ -211,6 +211,11 @@ def handle_load_general(data):
         response = requests.get(f"{STRATEGIES_URL}/chat/{chat_id}/general_messages")
         response.raise_for_status()
         emit('general_messages_history', response.json())
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            emit('general_messages_history', {"messages": []})
+        else:
+            emit('error', {"details": f"Não foi possível carregar o histórico geral: {str(e)}"})
     except RequestException as e:
         emit('error', {"details": f"Não foi possível carregar o histórico geral: {str(e)}"})
 

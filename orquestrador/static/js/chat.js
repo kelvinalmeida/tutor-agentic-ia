@@ -74,6 +74,9 @@ if (typeof window.ChatService === 'undefined') {
         this.socket.on('general_messages_history', (data) => this.notify('history_general', data));
         this.socket.on('private_messages_history', (data) => this.notify('history_private', data));
 
+        // Erros
+        this.socket.on('error', (data) => this.notify('error', data));
+
         // Lista de Usuários
         this.socket.on('update_user_list', (data) => this.notify('user_list_update', data));
         this.socket.on('update_online_users', (data) => this.notify('online_users_update', data));
@@ -177,6 +180,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.onHistoryPrivate = this.onHistoryPrivate.bind(this);
         this.onUserListUpdate = this.onUserListUpdate.bind(this);
         this.onOnlineUsersUpdate = this.onOnlineUsersUpdate.bind(this);
+        this.onError = this.onError.bind(this);
     }
 
     init() {
@@ -233,6 +237,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.service.subscribe('history_private', this.onHistoryPrivate);
         this.service.subscribe('user_list_update', this.onUserListUpdate);
         this.service.subscribe('online_users_update', this.onOnlineUsersUpdate);
+        this.service.subscribe('error', this.onError);
     }
 
     unsubscribeFromService() {
@@ -242,6 +247,7 @@ if (typeof window.ChatUI === 'undefined') {
         this.service.unsubscribe('history_private', this.onHistoryPrivate);
         this.service.unsubscribe('user_list_update', this.onUserListUpdate);
         this.service.unsubscribe('online_users_update', this.onOnlineUsersUpdate);
+        this.service.unsubscribe('error', this.onError);
     }
 
     // --- Lógica de UI ---
@@ -412,6 +418,17 @@ if (typeof window.ChatUI === 'undefined') {
                 } else {
                     this.showNoMessages('tab-pane-geral');
                 }
+            }
+        }
+    }
+
+    onError(data) {
+        console.error("[ChatUI] Erro recebido:", data);
+        const pane = document.getElementById('tab-pane-geral');
+        if (pane) {
+            const ul = pane.querySelector('.chat-messages');
+            if (ul && ul.querySelector('.loading-indicator')) {
+                this.showNoMessages('tab-pane-geral');
             }
         }
     }
