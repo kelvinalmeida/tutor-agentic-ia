@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 from requests.exceptions import RequestException
 import requests
 from .services_routs import STRATEGIES_URL, CONTROL_URL, USER_URL
-from wsgi import socketio
+from extensions import socketio
 from flask_socketio import join_room, leave_room, send, emit
 from .auth import token_required
 import json
