@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, session, redirect
+from flask import Blueprint, render_template, request, jsonify, redirect
 from requests.exceptions import RequestException
 import requests
 from .services_routs import STRATEGIES_URL, CONTROL_URL, USER_URL
@@ -305,8 +305,9 @@ def handle_load_private(data):
 def handle_general_message(data):
     """Recebe uma mensagem geral, salva via API e retransmite para a sala."""
     chat_id = data.get('chat_id')
+    client_data = socket_clients.get(request.sid, {})
     message_payload = {
-        "username": session.get('username'),
+        "username": data.get('username') or client_data.get('username'),
         "content": data.get('content')
     }
     try:
@@ -321,15 +322,15 @@ def handle_general_message(data):
 def handle_private_message(data):
     """Recebe uma mensagem privada, salva e a envia para o destinatário correto."""
     chat_id = data.get('chat_id')
-    sender_id = session.get('user_id')
-    recipient_id = data.get('recipient_id')
+    client_data = socket_clients.get(request.sid, {})
+    sender_id = data.get('sender_id') or client_data.get('user_id')
     target_username = data.get('target_username')
     # recipient_name = data.get('recipient_name')
 
     message_payload = {
         "sender_id": sender_id,
         "content": data.get('content'),
-        "username": session.get('username'), # Incluindo o nome de quem envia
+        "username": data.get('username') or client_data.get('username'), # Incluindo o nome de quem envia
         "target_username": target_username # Nome do destinatário
     }
     try:
