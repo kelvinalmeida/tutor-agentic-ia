@@ -532,13 +532,14 @@ if (typeof window.ChatUI === 'undefined') {
 // Retorna a instância da UI para que o chamador possa destruí-la depois.
 
 function initializeChatComponent() {
-    // 1. Inicializa o Singleton do Service (se não existir) e conecta
-    const service = new window.ChatService();
-    service.connect(window.chatId);
-
-    // 2. Inicializa a UI
+    // 1. Inicializa a UI primeiro para registrar listeners antes de carregar histórico
     const ui = new window.ChatUI();
     ui.init();
+
+    // 2. Depois conecta o serviço (isso dispara join + load history)
+    // Evita condição de corrida em que o histórico chega antes dos subscribers.
+    const service = new window.ChatService();
+    service.connect(window.chatId);
 
     // 3. Retorna o objeto UI para controle de lifecycle externo
     return ui;
