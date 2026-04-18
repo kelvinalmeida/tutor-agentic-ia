@@ -40,6 +40,7 @@
     window.myUsername = "{{ current_user['username'] }}";
     window.myUserId = "{{ current_user['id'] }}";
     window.chatId = "{{ chat_id }}";
+    window.allUsers = {{ all_users|safe }};
     console.log("Chat ID:", window.chatId);
 </script>
 

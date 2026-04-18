@@ -12,6 +12,9 @@ if (typeof window.ChatService === 'undefined') {
             this.listeners = new Map(); // Map<EventName, Set<Callback>>
             this.chatId = null;
             this.isConnected = false;
+            this.myUsername = window.myUsername || null;
+            this.myUserId = window.myUserId || null;
+            this.allUsers = window.allUsers || [];
 
             window.ChatService.instance = this;
         }
@@ -30,6 +33,12 @@ if (typeof window.ChatService === 'undefined') {
                 this.socket.connect();
                 return;
             }
+        }
+
+        if (typeof window.io !== 'function') {
+            console.warn("[ChatService] Socket.IO indisponível; usando fallback HTTP.");
+            this.notify('socket_error', new Error('Socket.IO indisponível no cliente'));
+            return;
         }
 
         console.log("[ChatService] Criando nova conexão Socket.IO...");
@@ -84,7 +93,12 @@ if (typeof window.ChatService === 'undefined') {
         joinRoom() {
             if (!this.socket || !this.chatId) return;
             console.log(`[ChatService] Entrando na sala ${this.chatId}...`);
-            this.socket.emit('join', { chat_id: this.chatId });
+            this.socket.emit('join', {
+                chat_id: this.chatId,
+                username: this.myUsername,
+                user_id: this.myUserId,
+                all_users: JSON.stringify(this.allUsers || [])
+            });
             this.loadGeneralHistory();
         }
 
@@ -92,21 +106,19 @@ if (typeof window.ChatService === 'undefined') {
         if (this.socket && this.chatId) {
             console.log("[ChatService] Solicitando histórico geral...");
             this.socket.emit('load_general_messages', { chat_id: this.chatId });
+            return;
         }
+        return this.loadGeneralHistoryFallback();
     }
 
     async loadGeneralHistoryFallback() {
         if (!this.chatId) return;
-        try {
-            const response = await fetch(`/chat/${this.chatId}/history`);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            const data = await response.json();
-            this.notify('history_general', data);
-        } catch (err) {
-            this.notify('socket_error', err);
+        const response = await fetch(`/chat/${this.chatId}/history`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
+        const data = await response.json();
+        this.notify('history_general', data);
     }
 
     loadPrivateHistory(targetUsername) {
@@ -117,28 +129,73 @@ if (typeof window.ChatService === 'undefined') {
                 target_username: targetUsername,
                 chat_id: this.chatId
             });
+            return;
         }
+        return this.loadPrivateHistoryFallback(targetUsername);
+    }
+
+    async loadPrivateHistoryFallback(targetUsername) {
+        if (!this.chatId || !this.myUsername || !targetUsername) return;
+        const response = await fetch(`/chat/${this.chatId}/private_history/${encodeURIComponent(this.myUsername)}/${encodeURIComponent(targetUsername)}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        this.notify('history_private', { target_username: targetUsername, messages: data });
     }
 
     sendGeneralMessage(content) {
-        if (!this.socket) return;
         const myUsername = window.myUsername;
-        this.socket.emit('general_message', {
+        const payload = {
             username: myUsername,
             chat_id: this.chatId,
             content: content
-        });
+        };
+
+        if (this.socket) {
+            this.socket.emit('general_message', payload);
+            return;
+        }
+
+        fetch(`/chat/${this.chatId}/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(msg => this.notify('general_message', msg))
+            .catch(err => this.notify('socket_error', err));
     }
 
     sendPrivateMessage(targetUsername, content) {
-        if (!this.socket) return;
         const myUsername = window.myUsername;
-        this.socket.emit('private_message', {
+        const payload = {
+            sender_id: window.myUserId,
             username: myUsername,
             target_username: targetUsername,
             content: content,
             chat_id: this.chatId
-        });
+        };
+
+        if (this.socket) {
+            this.socket.emit('private_message', payload);
+            return;
+        }
+
+        fetch(`/chat/${this.chatId}/private_message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(msg => this.notify('private_message', msg))
+            .catch(err => this.notify('socket_error', err));
     }
 
     // --- Sistema de Pub/Sub para a UI ---
@@ -306,8 +363,12 @@ if (typeof window.ChatUI === 'undefined') {
             // Foca na aba existente se já aberta
             const existingBtn = document.getElementById(`tab-btn-${targetUsername}`);
             if (existingBtn) {
-                const tab = new bootstrap.Tab(existingBtn);
-                tab.show();
+                if (window.bootstrap?.Tab) {
+                    const tab = new bootstrap.Tab(existingBtn);
+                    tab.show();
+                } else {
+                    existingBtn.click();
+                }
             }
             return;
         }
@@ -336,8 +397,13 @@ if (typeof window.ChatUI === 'undefined') {
         this.openPrivateChats.add(targetUsername);
 
         // Ativar a nova aba
-        const newTab = new bootstrap.Tab(li.querySelector('button'));
-        newTab.show();
+        const newTabButton = li.querySelector('button');
+        if (window.bootstrap?.Tab) {
+            const newTab = new bootstrap.Tab(newTabButton);
+            newTab.show();
+        } else {
+            newTabButton.click();
+        }
 
         // Mostrar Loading na nova aba privada
         this.showLoading(`tab-pane-${targetUsername}`);
@@ -359,8 +425,12 @@ if (typeof window.ChatUI === 'undefined') {
         // Voltar para Geral
         const geralBtn = document.getElementById('tab-btn-geral');
         if (geralBtn) {
-            const tab = new bootstrap.Tab(geralBtn);
-            tab.show();
+            if (window.bootstrap?.Tab) {
+                const tab = new bootstrap.Tab(geralBtn);
+                tab.show();
+            } else {
+                geralBtn.click();
+            }
         }
     }
 

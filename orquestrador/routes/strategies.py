@@ -13,6 +13,7 @@ strategy_bp = Blueprint("strategy", __name__)
 # Global in-memory storage for online users (Chat ID -> Set of User IDs)
 # Note: In a multi-worker production environment, use Redis instead.
 connected_users = {}
+socket_clients = {}
 
 @strategy_bp.route('/strategies/create', methods=['POST', 'GET'])
 def create_strategy():
@@ -139,20 +140,12 @@ def chat_fragment(chat_id, session_id, current_user=None):
         for professor in professor_usernames:
             all_usernames.append(professor)
 
-        # Guarda o ID do usuário na sessão do Flask para uso nos sockets
-        
-        session['user_id'] = current_user['id']
-        session['username'] = current_user['username']
-
-        session['all_users'] = json.dumps(all_usernames)
-
-        # return f"{session['all_users']}"
-        
         # Passa a lista de usuários e o usuário atual para o template
         return render_template(
             '/strategies/chat_partial.html', 
             chat_id=chat_id, 
-            current_user=current_user
+            current_user=current_user,
+            all_users=json.dumps(all_usernames)
         )
     except RequestException as e:
         return jsonify({"error": "Service unavailable", "details": str(e)}), 503
@@ -169,6 +162,57 @@ def chat_history_proxy(chat_id, current_user=None):
     except RequestException as e:
         return jsonify({"error": "Service unavailable", "details": str(e)}), 503
 
+@strategy_bp.route('/chat/<int:chat_id>/private_history/<string:my_username>/<string:target_username>', methods=['GET'])
+@token_required
+def private_chat_history_proxy(chat_id, my_username, target_username, current_user=None):
+    try:
+        response = requests.get(
+            f"{STRATEGIES_URL}/chat/{chat_id}/private_messages/{my_username}/{target_username}",
+            timeout=5
+        )
+        response.raise_for_status()
+        return jsonify(response.json()), 200
+    except RequestException as e:
+        return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+
+@strategy_bp.route('/chat/<int:chat_id>/message', methods=['POST'])
+@token_required
+def add_general_message_proxy(chat_id, current_user=None):
+    payload = request.get_json(silent=True) or {}
+    try:
+        response = requests.post(
+            f"{STRATEGIES_URL}/chat/{chat_id}/add_message",
+            json={
+                "username": payload.get("username"),
+                "content": payload.get("content")
+            },
+            timeout=5
+        )
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except RequestException as e:
+        return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+
+@strategy_bp.route('/chat/<int:chat_id>/private_message', methods=['POST'])
+@token_required
+def add_private_message_proxy(chat_id, current_user=None):
+    payload = request.get_json(silent=True) or {}
+    try:
+        response = requests.post(
+            f"{STRATEGIES_URL}/chat/{chat_id}/add_priv_message",
+            json={
+                "sender_id": payload.get("sender_id"),
+                "content": payload.get("content"),
+                "username": payload.get("username"),
+                "target_username": payload.get("target_username")
+            },
+            timeout=5
+        )
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except RequestException as e:
+        return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+
 
 # --- EVENTOS SOCKET.IO ---
 
@@ -180,8 +224,8 @@ def handle_connect():
 @socketio.on('join')
 def on_join(data):
     """Cliente entra em uma sala específica para este chat."""
-    username = session.get('username')
-    user_id = session.get('user_id')
+    username = data.get('username') if isinstance(data, dict) else None
+    user_id = data.get('user_id') if isinstance(data, dict) else None
     chat_id = data.get('chat_id') if isinstance(data, dict) else None
     if not chat_id:
         emit('error', {"details": "chat_id ausente no evento join"})
@@ -194,22 +238,25 @@ def on_join(data):
     if chat_id not in connected_users:
         connected_users[chat_id] = set()
     connected_users[chat_id].add(user_id)
-    
-    # Store chat_id in session for disconnect handler
-    session['current_chat_id'] = chat_id
+
+    socket_clients[request.sid] = {
+        'username': username,
+        'user_id': user_id,
+        'chat_id': chat_id
+    }
 
     # Broadcast static list AND online status
-    # Evita KeyError caso a sessão não tenha sido hidratada corretamente no fluxo HTTP anterior.
-    all_users_payload = session.get('all_users', '[]')
+    all_users_payload = data.get('all_users', '[]') if isinstance(data, dict) else '[]'
     emit('update_user_list', all_users_payload)
     emit('update_online_users', list(connected_users[chat_id]), to=chat_id)
     
 @socketio.on('disconnect')
 def on_disconnect():
     """Cliente se desconecta e sai da sala."""
-    username = session.get('username')
-    user_id = session.get('user_id')
-    chat_id = session.get('current_chat_id')
+    client_data = socket_clients.pop(request.sid, {})
+    username = client_data.get('username')
+    user_id = client_data.get('user_id')
+    chat_id = client_data.get('chat_id')
 
     if chat_id and chat_id in connected_users:
         if user_id in connected_users[chat_id]:
@@ -235,10 +282,9 @@ def handle_load_general(data):
 def handle_load_private(data):
     """Busca o histórico de mensagens privadas entre dois usuários."""
     chat_id = data.get('chat_id')
-    user1_id = session.get('user_id')
     user2_id = data.get('with_user_id')
     target_username = data.get('target_username')
-    myUsername = session.get('username')
+    myUsername = data.get('myUsername')
 
     # emit('private_messages_history', {
     #     "username": session.get('username'),
