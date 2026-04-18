@@ -95,6 +95,20 @@ if (typeof window.ChatService === 'undefined') {
         }
     }
 
+    async loadGeneralHistoryFallback() {
+        if (!this.chatId) return;
+        try {
+            const response = await fetch(`/chat/${this.chatId}/history`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            this.notify('history_general', data);
+        } catch (err) {
+            this.notify('socket_error', err);
+        }
+    }
+
     loadPrivateHistory(targetUsername) {
         if (this.socket && this.chatId) {
             const myUsername = window.myUsername;
@@ -495,7 +509,18 @@ if (typeof window.ChatUI === 'undefined') {
             if (!pane) return;
             const loadingIndicator = pane.querySelector('.loading-indicator');
             if (loadingIndicator) {
-                this.showLoadError(paneId, 'Tempo de carregamento excedido. Verifique a conexão e tente novamente.');
+                this.service.loadGeneralHistoryFallback()
+                    .then(() => {
+                        // Se a fallback também não renderizar histórico, mostramos erro.
+                        const paneAfterFallback = document.getElementById(paneId);
+                        const stillLoading = paneAfterFallback?.querySelector('.loading-indicator');
+                        if (stillLoading) {
+                            this.showLoadError(paneId, 'Tempo de carregamento excedido. Verifique a conexão e tente novamente.');
+                        }
+                    })
+                    .catch(() => {
+                        this.showLoadError(paneId, 'Tempo de carregamento excedido. Verifique a conexão e tente novamente.');
+                    });
             }
         }, 7000);
         this.loadingTimeouts.set(paneId, timeoutId);
@@ -511,7 +536,13 @@ if (typeof window.ChatUI === 'undefined') {
     onSocketError(err) {
         console.error("[ChatUI] Erro ao carregar chat:", err);
         this.clearLoadingTimeout('tab-pane-geral');
-        this.showLoadError('tab-pane-geral');
+        this.service.loadGeneralHistoryFallback()
+            .then(() => {
+                const pane = document.getElementById('tab-pane-geral');
+                const stillLoading = pane?.querySelector('.loading-indicator');
+                if (stillLoading) this.showLoadError('tab-pane-geral');
+            })
+            .catch(() => this.showLoadError('tab-pane-geral'));
     }
 
         onUserListUpdate(userListDataString) {

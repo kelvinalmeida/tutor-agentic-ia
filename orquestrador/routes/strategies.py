@@ -158,6 +158,18 @@ def chat_fragment(chat_id, session_id, current_user=None):
         return jsonify({"error": "Service unavailable", "details": str(e)}), 503
 
 
+@strategy_bp.route('/chat/<int:chat_id>/history', methods=['GET'])
+@token_required
+def chat_history_proxy(chat_id, current_user=None):
+    """Fallback HTTP para histórico do chat geral quando o socket falhar."""
+    try:
+        response = requests.get(f"{STRATEGIES_URL}/chat/{chat_id}/general_messages", timeout=5)
+        response.raise_for_status()
+        return jsonify(response.json()), 200
+    except RequestException as e:
+        return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+
+
 # --- EVENTOS SOCKET.IO ---
 
 @socketio.on('connect')
