@@ -170,7 +170,10 @@ def on_join(data):
     """Cliente entra em uma sala específica para este chat."""
     username = session.get('username')
     user_id = session.get('user_id')
-    chat_id = data['chat_id']
+    chat_id = data.get('chat_id') if isinstance(data, dict) else None
+    if not chat_id:
+        emit('error', {"details": "chat_id ausente no evento join"})
+        return
     
     # Adiciona o cliente à sala do chat
     join_room(chat_id)
@@ -184,7 +187,9 @@ def on_join(data):
     session['current_chat_id'] = chat_id
 
     # Broadcast static list AND online status
-    emit('update_user_list', session['all_users'])
+    # Evita KeyError caso a sessão não tenha sido hidratada corretamente no fluxo HTTP anterior.
+    all_users_payload = session.get('all_users', '[]')
+    emit('update_user_list', all_users_payload)
     emit('update_online_users', list(connected_users[chat_id]), to=chat_id)
     
 @socketio.on('disconnect')
