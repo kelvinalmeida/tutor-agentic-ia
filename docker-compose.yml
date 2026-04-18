@@ -73,14 +73,16 @@ services:
       - "5002:5002"
     volumes:
       - ./user:/app
-    env_file:
-      - ./user/config.env
+    # env_file:
+    #   - ./user/config.env
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://user:secret@user-db:5432/postgres
+      # - DATABASE_URL=postgresql://user:secret@user-db:5432/postgres
+      - DATABASE_URL=${DATABASE_USER_URL}
+      - GROQ_API_KEY=${USER_GROQ_API_KEY}
     command: "flask run --host=0.0.0.0"
     depends_on:
       - user-db

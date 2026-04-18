@@ -11,7 +11,7 @@ def create_app():
     app = Flask(__name__)
 
 
-    load_dotenv(os.path.join(os.getcwd(), 'config.env'))
+    # load_dotenv(os.path.join(os.getcwd(), 'config.env'))
 
     
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///../instance/users.db") 
