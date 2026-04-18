@@ -313,7 +313,7 @@ def handle_general_message(data):
         # Salva a mensagem na API
         requests.post(f"{STRATEGIES_URL}/chat/{chat_id}/add_message", json=message_payload)
         # Retransmite para todos na sala
-        emit('new_general_message', message_payload, to=chat_id)
+        emit('new_general_message', message_payload, to=chat_id, include_self=False)
     except RequestException as e:
         emit('error', {"details": f"Não foi possível enviar a mensagem: {str(e)}"})
 
@@ -340,7 +340,7 @@ def handle_private_message(data):
         # A lógica para enviar ao destinatário específico é complexa sem um mapeamento user->socket.
         # A abordagem mais simples com rooms é enviar para a sala geral e o cliente decide se exibe.
         # O ideal seria ter uma sala por conversa privada (ex: join_room(f'private_{sender_id}_{recipient_id}'))
-        emit('new_private_message', new_message, to=chat_id)
+        emit('new_private_message', new_message, to=chat_id, include_self=False)
         
     except RequestException as e:
         emit('error', {"details": f"Não foi possível enviar a mensagem privada: {str(e)}"})

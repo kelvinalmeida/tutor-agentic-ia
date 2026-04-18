@@ -153,6 +153,8 @@ if (typeof window.ChatService === 'undefined') {
         };
 
         if (this.socket && this.socket.connected) {
+            // Atualiza UI local imediatamente para evitar sensação de "mensagem perdida".
+            this.notify('general_message', payload);
             this.socket.emit('general_message', payload);
             return;
         }
@@ -181,6 +183,8 @@ if (typeof window.ChatService === 'undefined') {
         };
 
         if (this.socket && this.socket.connected) {
+            // Atualiza UI local imediatamente para evitar sensação de "mensagem perdida".
+            this.notify('private_message', payload);
             this.socket.emit('private_message', payload);
             return;
         }
