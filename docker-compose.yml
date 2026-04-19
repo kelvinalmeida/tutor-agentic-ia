@@ -5,8 +5,8 @@ services:
     working_dir: /app
     ports:
       - "5000:5000"
-    volumes:
-      - ./orquestrador:/app # Monta o diretório local no container para hot reload
+    # volumes:
+    #   - ./orquestrador:/app # Monta o diretório local no container para hot reload
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
@@ -23,8 +23,8 @@ services:
     working_dir: /app
     ports:
       - "5001:5001"
-    volumes:
-      - ./agente_sessao:/app
+    # volumes:
+    #   - ./agente_sessao:/app
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
@@ -73,8 +73,8 @@ services:
     working_dir: /app
     ports:
       - "5002:5002"
-    volumes:
-      - ./user:/app
+    # volumes:
+    #   - ./user:/app
     # env_file:
     #   - ./user/config.env
     environment:
@@ -110,8 +110,8 @@ services:
     working_dir: /app
     ports:
       - "5003:5003"
-    volumes:
-      - ./strategies:/app
+    # volumes:
+    #   - ./strategies:/app
     # env_file:
     #   - ./strategies/config.env
     environment:
@@ -133,8 +133,8 @@ services:
     working_dir: /app
     ports:
       - "5004:5004"
-    volumes:
-      - ./domain:/app
+    # volumes:
+    #   - ./domain:/app
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
