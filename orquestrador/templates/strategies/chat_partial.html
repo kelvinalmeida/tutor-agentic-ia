@@ -1,6 +1,6 @@
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-3">
+    <div class="row g-3">
+        <div class="col-12 col-md-3">
             <div class="card shadow-sm">
                 <div class="card-header">
 
@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <div class="col-md-9">
+        <div class="col-12 col-md-9">
             <div class="card shadow-sm chat-card">
                 <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="chat-tabs-list" role="tablist">
@@ -23,9 +23,9 @@
                 </div>
 
                 <div class="card-footer">
-                    <form id="chatForm" class="d-flex">
+                    <form id="chatForm" class="d-flex flex-column flex-sm-row gap-2">
                         <!-- <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea> -->
-                        <input id="myMessage" class="form-control me-2 " placeholder="Digite uma mensagem..."
+                        <input id="myMessage" class="form-control" placeholder="Digite uma mensagem..."
                             autocomplete="off" required>
                         <button type="submit" class="btn btn-primary">Enviar</button>
                     </form>
