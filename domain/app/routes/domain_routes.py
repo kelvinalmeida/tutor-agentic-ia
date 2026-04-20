@@ -2,14 +2,45 @@ import json
 import logging
 import sys
 import os
-import tempfile
 from flask import request, redirect, url_for, render_template, send_file, Blueprint, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
 from db import create_connection
-# Importação do SDK do Vercel Blob
-from vercel import blob
 
 domain_bp = Blueprint('domain_bp', __name__)
+
+
+def get_uploads_dir():
+    uploads_dir = os.path.join(current_app.root_path, 'uploads')
+    os.makedirs(uploads_dir, exist_ok=True)
+    return uploads_dir
+
+
+def build_unique_filename(directory, filename):
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    candidate = filename
+
+    while os.path.exists(os.path.join(directory, candidate)):
+        candidate = f"{base}_{counter}{ext}"
+        counter += 1
+
+    return candidate
+
+
+def resolve_file_path(db_path, filename):
+    if db_path and os.path.exists(db_path):
+        return db_path
+
+    if db_path and not os.path.isabs(db_path):
+        candidate = os.path.join(current_app.root_path, db_path)
+        if os.path.exists(candidate):
+            return candidate
+
+    uploads_candidate = os.path.join(get_uploads_dir(), filename)
+    if os.path.exists(uploads_candidate):
+        return uploads_candidate
+
+    return None
 
 def get_db_connection():
     return create_connection(current_app.config['SQLALCHEMY_DATABASE_URI'])
@@ -66,13 +97,8 @@ def fetch_domains_with_children(conn, domain_ids=None):
 
 @domain_bp.route('/domains/create', methods=['POST'])
 def create_domain():
-    # CORREÇÃO: Define a pasta temporária de acordo com o sistema
-    # Se estiver no Vercel (Linux), usa /tmp. Se for local (Windows/Mac), usa a pasta temp do sistema.
-    if os.environ.get('VERCEL'):
-        TEMP_FOLDER = '/tmp'
-    else:
-        TEMP_FOLDER = tempfile.gettempdir()
-    
+    uploads_dir = get_uploads_dir()
+
     conn = get_db_connection()
     if conn is None:
         return jsonify({"error": "Database connection failed"}), 503
@@ -99,63 +125,37 @@ def create_domain():
         domain_row = cursor.fetchone()
         new_domain_id = domain_row['id']
 
-        # 3. Salva PDFs no Vercel Blob
+        # 3. Salva PDFs localmente na pasta uploads
         for file in pdf_files:
             if file and file.filename.endswith('.pdf'):
-                filename = secure_filename(file.filename)
-                temp_path = os.path.join(TEMP_FOLDER, filename)
-                
-                # Salva no /tmp primeiro
-                file.save(temp_path)
-                
-                try:
-                    # Envia para o Vercel Blob
-                    # access='public' torna o arquivo acessível via URL
-                    blob_response = blob.upload_file(
-                        local_path=temp_path, 
-                        path=filename, 
-                        access='public',
-                        add_random_suffix=True
-                    )
-                    # A resposta deve conter a URL pública
-                    file_url = blob_response.url 
-                    
-                    query_pdf = """
-                        INSERT INTO pdf (filename, path, domain_id) 
-                        VALUES (%s, %s, %s);
-                    """
-                    # Gravamos a URL no campo 'path' do banco
-                    cursor.execute(query_pdf, (filename, file_url, new_domain_id))
-                finally:
-                    # Limpa o arquivo temporário
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
+                original_filename = secure_filename(file.filename)
+                filename = build_unique_filename(uploads_dir, original_filename)
+                relative_path = os.path.join('uploads', filename)
+                file_path = os.path.join(uploads_dir, filename)
 
-        # 4. Salva vídeos enviados no Vercel Blob
+                file.save(file_path)
+
+                query_pdf = """
+                    INSERT INTO pdf (filename, path, domain_id) 
+                    VALUES (%s, %s, %s);
+                """
+                cursor.execute(query_pdf, (filename, relative_path, new_domain_id))
+
+        # 4. Salva vídeos enviados localmente na pasta uploads
         for video_file in video_files:
             if video_file and video_file.filename.endswith('.mp4'):
-                filename = secure_filename(video_file.filename)
-                temp_path = os.path.join(TEMP_FOLDER, filename)
-                
-                video_file.save(temp_path)
-                
-                try:
-                    blob_response = blob.upload_file(
-                        local_path=temp_path, 
-                        path=filename, 
-                        access='public',
-                        add_random_suffix=True
-                    )
-                    file_url = blob_response.url
-                    
-                    query_video_upload = """
-                        INSERT INTO video_upload (filename, path, domain_id) 
-                        VALUES (%s, %s, %s);
-                    """
-                    cursor.execute(query_video_upload, (filename, file_url, new_domain_id))
-                finally:
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
+                original_filename = secure_filename(video_file.filename)
+                filename = build_unique_filename(uploads_dir, original_filename)
+                relative_path = os.path.join('uploads', filename)
+                file_path = os.path.join(uploads_dir, filename)
+
+                video_file.save(file_path)
+
+                query_video_upload = """
+                    INSERT INTO video_upload (filename, path, domain_id) 
+                    VALUES (%s, %s, %s);
+                """
+                cursor.execute(query_video_upload, (filename, relative_path, new_domain_id))
 
         # 5. Salva links do YouTube
         for yt_url in youtube_links:
@@ -224,23 +224,24 @@ def delete_domain(domain_id):
         if not cursor.fetchone():
             return jsonify({"error": "Domain not found"}), 404
 
-        # Delete associated files from Blob Storage
-        # PDFs
-        cursor.execute("SELECT path FROM pdf WHERE domain_id = %s", (domain_id,))
+        # Delete associated files from local uploads folder
+        cursor.execute("SELECT filename, path FROM pdf WHERE domain_id = %s", (domain_id,))
         for row in cursor.fetchall():
-            try:
-                # O 'path' agora contém a URL completa do Blob
-                blob.delete(row['path'])
-            except Exception as e:
-                logging.warning(f"Failed to delete blob {row['path']}: {e}")
+            file_path = resolve_file_path(row['path'], row['filename'])
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    logging.warning(f"Failed to delete file {file_path}: {e}")
         
-        # Videos Uploaded
-        cursor.execute("SELECT path FROM video_upload WHERE domain_id = %s", (domain_id,))
+        cursor.execute("SELECT filename, path FROM video_upload WHERE domain_id = %s", (domain_id,))
         for row in cursor.fetchall():
-            try:
-                blob.delete(row['path'])
-            except Exception as e:
-                logging.warning(f"Failed to delete blob {row['path']}: {e}")
+            file_path = resolve_file_path(row['path'], row['filename'])
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    logging.warning(f"Failed to delete file {file_path}: {e}")
 
         # Delete domain (CASCADE handles DB records)
         cursor.execute("DELETE FROM domain WHERE id = %s", (domain_id,))
@@ -294,8 +295,11 @@ def download_pdf(pdf_id):
         if not pdf:
             return jsonify({'error': 'File not found'}), 404
         
-        # Como agora o path é uma URL do Blob, redirecionamos o usuário
-        return redirect(pdf['path'])
+        file_path = resolve_file_path(pdf['path'], os.path.basename(pdf['path']))
+        if not file_path:
+            return jsonify({'error': 'File not found on local uploads'}), 404
+
+        return send_file(file_path, as_attachment=False)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -385,8 +389,11 @@ def get_uploaded_video(video_id):
         if not video:
              return jsonify({'error': 'Video not found'}), 404
              
-        # Redireciona para a URL do Blob
-        return redirect(video['path'])
+        file_path = resolve_file_path(video['path'], os.path.basename(video['path']))
+        if not file_path:
+            return jsonify({'error': 'Video not found on local uploads'}), 404
+
+        return send_file(file_path, as_attachment=False)
     finally:
         cursor.close()
         conn.close()
