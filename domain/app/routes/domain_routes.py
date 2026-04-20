@@ -13,18 +13,24 @@ def get_db_connection():
 
 
 def get_uploads_folder():
-    uploads_folder = os.path.join(current_app.root_path, 'uploads')
+    configured = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    uploads_folder = configured
+    if not os.path.isabs(uploads_folder):
+        uploads_folder = os.path.join(current_app.root_path, uploads_folder)
     os.makedirs(uploads_folder, exist_ok=True)
     return uploads_folder
 
 
 def resolve_local_file_path(db_path, filename):
     candidates = []
+    uploads_folder = get_uploads_folder()
+
     if db_path:
         candidates.append(db_path)
         if not os.path.isabs(db_path):
             candidates.append(os.path.join(current_app.root_path, db_path))
-    candidates.append(os.path.join(get_uploads_folder(), filename))
+            candidates.append(os.path.join(uploads_folder, db_path))
+    candidates.append(os.path.join(uploads_folder, filename))
 
     for path in candidates:
         normalized = os.path.normpath(path)
@@ -172,7 +178,10 @@ def create_domain():
         cursor.close()
         conn.close()
 
-        return jsonify({"message": "Domain created successfully!"}), 200
+        return jsonify({
+            "message": "Domain created successfully!",
+            "upload_folder": uploads_folder
+        }), 200
 
     except Exception as e:
         if conn:

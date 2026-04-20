@@ -42,6 +42,7 @@ def create_app():
     app.register_blueprint(domain_bp)
     app.register_blueprint(agente_domain_bp)
 
-    app.config['UPLOAD_FOLDER'] = 'uploads/'
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     return app

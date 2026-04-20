@@ -15,12 +15,17 @@ def get_db_connection():
 
 
 def resolve_local_pdf_path(db_path, filename):
+    uploads_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(current_app.root_path, 'uploads'))
+    if not os.path.isabs(uploads_folder):
+        uploads_folder = os.path.join(current_app.root_path, uploads_folder)
+
     candidates = []
     if db_path:
         candidates.append(db_path)
         if not os.path.isabs(db_path):
             candidates.append(os.path.join(current_app.root_path, db_path))
-    candidates.append(os.path.join(current_app.root_path, 'uploads', filename))
+            candidates.append(os.path.join(uploads_folder, db_path))
+    candidates.append(os.path.join(uploads_folder, filename))
     candidates.append(os.path.join(current_app.root_path, 'RAG_arquivos_compartilhados', filename))
 
     for path in candidates:
