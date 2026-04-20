@@ -13,9 +13,24 @@ def get_db_connection():
 
 
 def get_upload_folder():
-    upload_folder = os.path.join(current_app.root_path, 'uploads')
+    upload_folder = current_app.config.get('UPLOAD_FOLDER')
+    if not upload_folder:
+        upload_folder = os.path.join(current_app.root_path, 'uploads')
+
     os.makedirs(upload_folder, exist_ok=True)
     return upload_folder
+
+
+def generate_unique_filename(upload_folder, filename):
+    base, ext = os.path.splitext(filename)
+    candidate = filename
+    counter = 1
+
+    while os.path.exists(os.path.join(upload_folder, candidate)):
+        candidate = f"{base}_{counter}{ext}"
+        counter += 1
+
+    return candidate
 
 
 def resolve_local_file_path(db_path, filename):
@@ -121,6 +136,7 @@ def create_domain():
         for file in pdf_files:
             if file and file.filename.endswith('.pdf'):
                 filename = secure_filename(file.filename)
+                filename = generate_unique_filename(upload_folder, filename)
                 local_path = os.path.join(upload_folder, filename)
                 file.save(local_path)
 
@@ -134,6 +150,7 @@ def create_domain():
         for video_file in video_files:
             if video_file and video_file.filename.endswith('.mp4'):
                 filename = secure_filename(video_file.filename)
+                filename = generate_unique_filename(upload_folder, filename)
                 local_path = os.path.join(upload_folder, filename)
                 video_file.save(local_path)
 
