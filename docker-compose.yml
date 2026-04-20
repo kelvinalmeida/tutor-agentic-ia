@@ -133,8 +133,8 @@ services:
     working_dir: /app
     ports:
       - "5004:5004"
-    # volumes:
-    #   - ./domain:/app
+    volumes:
+      - ./domain:/app
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
