@@ -32,7 +32,7 @@ def login():
                 
                 # Criar resposta com cookie
                 resp = make_response(redirect(url_for('login.home_page')))  # exemplo
-                resp.set_cookie('access_token', token, httponly=True, max_age=3600)  # 1 hora
+                resp.set_cookie('access_token', token, httponly=True, max_age=86400)  # 24 horas
                 return resp
             else:
                 return render_template("login.html", error="Login failed.")

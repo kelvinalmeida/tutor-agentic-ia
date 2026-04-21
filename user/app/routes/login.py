@@ -67,7 +67,7 @@ def login():
                 'id': user['id'],         # Acessando via chave de dicionário
                 'type': user['type'],     # Acessando via chave de dicionário
                 'username': user['username'],
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
             
             return jsonify({'token': token})
