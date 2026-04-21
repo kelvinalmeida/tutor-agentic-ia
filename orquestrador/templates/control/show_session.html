@@ -348,7 +348,19 @@
                                 <tr>
                                     <td>{{ tatic.name }}</td>
                                     <td>{{ tatic.time }}</td>
-                                    <td>{{ tatic.description or '—' }}</td>
+                                    <td>
+                                        {{ tatic.description or '—' }}
+                                        {% if tatic.name and 'reuso' in tatic.name|lower and session.domains and session.domains[0].pdfs %}
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+                                            {% for pdf in session.domains[0].pdfs %}
+                                            <a href="{{ url_for('domain.proxy_pdf_download', pdf_id=pdf.id) }}"
+                                                class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-download me-1"></i>{{ pdf.filename }}
+                                            </a>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
